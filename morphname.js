@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         libpol morphname
-// @version      0.9
-// @description  automagically change name
+// @name         morphname
+// @version      1.0
+// @description  automagically change name on libpol and brainworm
 // @author       github.com/Xx-hackerman-xX
 // @match        *://*.libpol.org/*
 // @match        *://*.brainworm.surgery/*
