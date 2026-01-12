@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         MorphName
-// @version      1.2
+// @version      1.3
 // @description  automagically change name on libpol
-// @author       github.com/Xx-hackerman-xX
 // @match        *://*.libpol.org/*
-// @icon         https://libpol.org/gen/UOGMCAQwI6cr.jpg
+// @icon         https://jej.lol/posts/[www.jej.lol]%20pjsk%20project_sekai%20hatsune_miku%20miku%20stamp%20lasagna%20lasagnya%20-%2016675.png
 // @run-at       document-idle
-// @downloadURL  https://raw.githubusercontent.com/Xx-hackerman-xX/morphname/refs/heads/main/morphname.js
 // @grant        none
+// @author       github.com/Xx-hackerman-xX
+// @downloadURL  https://raw.githubusercontent.com/Xx-hackerman-xX/morphname/refs/heads/main/morphname.js
 // ==/UserScript==
 
 
@@ -30,15 +30,14 @@ const changelogHeader = `morphname has updated to v${GM_info.script.version} :)`
 const changelogBody = `CHANGELOG
 
 new:
-+ edit name settings directly in the identity panel!
-+ button to toggle script, and save your original name
-+ button to manually increment name without needing to post
-+ next name preview
++ add ordinal suffixes (st, nd, rd, th) with {1}
++ add reference for what the different things do
++ new icon
 
 fixed:
-~ board flag no longer duplicates with every post
+~ changelog displays good and proper now
 
-this has probably added some bugs so lemme know if you find any ok thanks bye
+lemme know if you find any bugs ok thanks bye
 
 click to close...`
 
@@ -49,30 +48,36 @@ const HTML_WARNING_NAMETOOLONG = `<div id="morph-warning-nametoolong" style="dis
 
 const HTML_TABLE_NEXTNAMEPREVIEW = `<tr>
 	<td><label for="morph-preview" title="preview of your next name">next name</label></td>
-	<td><input name="morph-preview" id="morph-preview" type="text" maxlength="50" disabled autocomplete="off"><td>
+	<td><input name="morph-preview" id="morph-preview" type="text" maxlength="50" disabled><td>
 <tr>`
 
 
 const HTML_TABLE_CONFIG = `<div class='spacer'></div>
 <tr>
 	<td><label for="morph-switch" title="enable morphname, and disable manual name editing">Enable MorphName</label></td>
-  <td><input name="morph-switch" id="morph-switch" title="enable morphname, and disable manual name editing" type="checkbox" autocomplete="off" checked></td>
+  <td><input name="morph-switch" id="morph-switch" title="enable morphname, and disable manual name editing" type="checkbox" hecked></td>
 </tr>
 <tr>
 	<td><label for="morph-template" title="the string {0} will be replaced by your number above">name template</label></td>
-	<td><input name="morph-template" id="morph-template" type="text" maxlength="40" title="the string {0} will be replaced by your number above" autocomplete="off"><td>
+	<td><input name="morph-template" id="morph-template" type="text" maxlength="40" title="the string {0} will be replaced by your number above"><td>
 </tr>
 <tr>
 	<td><label for="morph-current" title="current number for {0}">current value</label></td>
-	<td><input name="morph-current" id="morph-current" type="text" maxlength="6" title="current number for {0}" autocomplete="off"><td>
+	<td><input name="morph-current" id="morph-current" type="text" maxlength="6" title="current number for {0}"><td>
 </tr>
 <tr>
 	<td><label for="morph-increment" title="how much the number {0} will increment by after each post">increment by</label></td>
-	<td><input name="morph-increment" id="morph-increment" type="text" maxlength="6" title="how much the number {0} will increment by after each post" autocomplete="off"><td>
+	<td><input name="morph-increment" id="morph-increment" type="text" maxlength="6" title="how much the number {0} will increment by after each post"><td>
 </tr>
 <tr data-id="morph-reset">
 	<input id="morph-reset" type="submit" value="reset morphname" title="reset settings to default">
 </tr>
+`
+
+const HTML_REFERENCE = `<div class='spacer'></div>
+<div><b>Reference</b></div>
+<div>{0} = the incrementing number</div>
+<div>{1} = ordinal suffix (st, nd, rd, th)</div>
 `
 
 // localstorage keys
@@ -228,7 +233,7 @@ function updateNextName() {
   /* process the next iteration of our name and set it */
   let template = NAME_TEMPLATE.get()
   let value = MODES[STATE.currentMode.get()].getNext()
-  let newName = template.format(value)
+  let newName = template.format(value, getOrdinal(value))
   setName(newName)
 }
 
@@ -268,7 +273,7 @@ function updateGUI() {
   }
 
   // update name
-  let newName = template.format(value)
+  let newName = template.format(value, getOrdinal(value))
   setName(newName)
 
   // warn user if it's too long
@@ -277,8 +282,35 @@ function updateGUI() {
 
   // display preview of next name
   let nextValue = MODES[STATE.currentMode.get()].getNext(preview=true)
-  document.getElementById("morph-preview").value = template.format(nextValue)
+  document.getElementById("morph-preview").value = template.format(nextValue, getOrdinal(nextValue))
 
+}
+
+
+
+function getOrdinal(number) {
+  /* return ordinal for this number (st, nd, rd, th) */
+  number = number.toString()  // just in case
+
+  // between 10 and 20 is all th
+  if (number.at(-2) === "1") {
+    return "th"
+  }
+
+  // depends on last digit
+  switch (number.at(-1)) {
+    case "1":
+      return "st";
+      break;
+    case "2":
+      return "nd";
+      break;
+    case "3":
+      return "rd";
+      break;
+    default:
+      return "th"
+  }
 }
 
 
@@ -291,6 +323,7 @@ const LOVELY_CSS = `
   background-color: #001db7;
   border: 6px dashed #4965ff;
   box-shadow: inherit;
+  width: auto;
 }
 
 .morphname-button {
@@ -374,7 +407,7 @@ function displayOverlayMessage(headerText, bodyText, closingFunction=null) {
   header.textContent = headerText
   let body = document.createElement("b")
   body.classList.add("overlay-message-text")
-  body.textContent = bodyText
+  body.innerHTML = bodyText.replaceAll("\n","<br>")
   overlayMessage.append(header, body)
   overlayMessage.addEventListener(
     "click", (clickEvent) => {
@@ -415,6 +448,7 @@ function addMorphnameControls() {
   /* add controls and functions to control morphname from webpage */
   let tableParent = document.querySelector("#identity tbody")  // inner table of identity panel
   tableParent.insertAdjacentHTML('beforeend', HTML_TABLE_CONFIG)
+  tableParent.insertAdjacentHTML('beforeend', HTML_REFERENCE)
   let warningParent = document.getElementById("identity")
   warningParent.insertAdjacentHTML('beforeend', HTML_WARNING_NAMETOOLONG)
   let nextnameParent = document.querySelector('tr[data-id="name"]')
